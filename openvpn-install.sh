@@ -89,9 +89,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "1) Add a cert for a new user"
 		echo "2) Revoke existing user cert"
 		echo "3) Remove OpenVPN"
-		echo "4) Exit"
+		echo "4) List active users"
+		echo "5) Exit"
 		echo ""
-		read -p "Select an option [1-4]: " option
+		read -p "Select an option [1-5]: " option
 		case $option in
 			1) 
 			echo ""
@@ -132,7 +133,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			;;
 			2)
 			echo ""
-			echo "Tell me the existing client name"
+			echo "Tell me the existing client name: "
+			ls /etc/openvpn/easy-rsa/2.0/keys -I ca.crt -I server.crt | grep crt |  cut -d. -f1
 			read -p "Client name: " -e -i client CLIENT
 			cd /etc/openvpn/easy-rsa/2.0/
 			. /etc/openvpn/easy-rsa/2.0/vars
@@ -153,6 +155,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
+			echo ""
+			echo "R = Revoked | V = Trusted and active"
+			cat /etc/openvpn/easy-rsa/2.0/keys/index.txt
 			exit
 			;;
 			3) 
@@ -178,7 +183,13 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			exit
 			;;
-			4) exit;;
+			4)
+			echo "List connected users"
+			ACTIVELOG=$(cat server.conf | grep "status " | sed '1d' | cut -d' ' -f2)
+			cat /etc/openvpn/$ACTIVELOG
+			exit;;
+			5)
+			exit;;
 		esac
 	done
 else
