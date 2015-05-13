@@ -314,7 +314,8 @@ else
 	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
 	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
-	sed -i "s|;duplicate-cn|duplicate-cn|" server.conf
+	#Improved security : Each client should have its own certificate/key pairs.
+	#sed -i "s|;duplicate-cn|duplicate-cn|" server.conf
 	sed -i "s|server 10.8.0.0 255.255.255.0|server 172.16.69.0 255.255.255.128|" server.conf
 	sed -i "s|;push \"route 192.168.10.0 255.255.255.0\"|push \"route 192.168.0.0 255.255.0.0 net_gateway\"|" server.conf
 	sed -i "s|;cipher AES-128-CBC   # AES|cipher AES-256-CBC   # AES|" server.conf
