@@ -14,10 +14,10 @@ Once it ends, you can run it again to add more users, remove some of them or eve
 In addition to the original code
 - Password for client cert
 - Expires days for client cert
+- List client cert before revoking them
 
 ###TODO
 - Send ovpn file by mail (cert password mandatory?)
-- List client cert before revoking them
 
 ###I want to run my own VPN but don't have a server for that
 You can get a little VPS for few $$
