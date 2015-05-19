@@ -122,6 +122,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			export KEY_OU="$CLIENT_OU"
 			export KEY_EMAIL="$CLIENT_EMAIL"
 			export KEY_CN="$CLIENT"
+			export KEY_NAME="$CLIENT"
 			export KEY_EXPIRE="$CLIENT_TTL"
 			export EASY_RSA="${EASY_RSA:-.}"
 			"$EASY_RSA/pkitool" "$CLIENT_PW_CRT" "$CLIENT"
