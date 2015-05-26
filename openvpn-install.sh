@@ -206,7 +206,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			;;
 			4)
 			echo "List connected users"
-			ACTIVELOG=$(cat server.conf | grep "status " | sed '1d' | cut -d' ' -f2)
+			ACTIVELOG=$(cat /etc/openvpn/server.conf | grep "status " | sed '1d' | cut -d' ' -f2)
 			cat /etc/openvpn/$ACTIVELOG
 			exit;;
 			5)
