@@ -17,6 +17,13 @@ if [[ ! -e /dev/net/tun ]]; then
 	exit
 fi
 
+#Check if mailutils is installed
+#If troubles check /var/log/mail.log and postfix (or others) conf files.
+if [[ ! -e /usr/bin/mail ]]; then
+        echo "WARNING. MTA is not available. Mails features are disabled"
+	MAIL_ENABLE='NO'
+	sleep 2
+fi
 
 if grep -q "CentOS release 5" "/etc/redhat-release"; then
 	echo "CentOS 5 is too old and not supported"
@@ -105,12 +112,19 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Client ORG: " -e -i "Dynamic Dev Co., Ltd." CLIENT_ORG
 			read -p "Client OU: " -e -i "Developer" CLIENT_OU
 			read -p "Client EMAIL: " -e -i "user@domain.com" CLIENT_EMAIL
-			read -p "CLIENT Cert expires in X Days: " -e -i "365" CLIENT_TTL
+			read -p "Client Cert expires in X Days: " -e -i "365" CLIENT_TTL
 			read -p "Password for the cert? [y/N] " -e -i "n" CLIENT_PW_CRT_OPT
 			if [[ "$CLIENT_PW_CRT_OPT" = 'y' ]]; then
 				CLIENT_PW_CRT="--pass"
 			else
 				CLIENT_PW_CRT=""
+			fi
+			#For security reasons, the mail feature is only available when the cert is generated with a password
+			if [[ "$CLIENT_PW_CRT_OPT" = 'y' && ! "$MAIL_ENABLE" = 'NO' ]]; then
+				read -p "Send the cert file by mail? [y/N] " -e -i "n" SEND_BY_MAIL
+				if [[ "$SEND_BY_MAIL" = 'y' ]]; then
+					read -p "Destination (email address): " -e DESTINATION_ADDRESS
+				fi
 			fi
 			cd /etc/openvpn/easy-rsa/2.0/
 			source ./vars
@@ -130,6 +144,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			newclient "$CLIENT"
 			echo ""
 			echo "Client $CLIENT added, certs available at ~/$CLIENT.ovpn"
+                        if [[ -n "${DESTINATION_ADDRESS+1}"    ]]; then #Test if the var exists
+                                #If you use an other tool/MUA/MTA, feel free to change it here
+                                echo -e "Please find attached the client Cert: $CLIENT\nORG:$CLIENT_ORG\nDate: $(date)\nValid until: $CLIENT_TTL days\nServer IP: $IP" | mailx -s "VPN Cert $CLIENT" $DESTINATION_ADDRESS -a ~/$CLIENT.ovpn
+								echo "Mail sended to $DESTINATION_ADDRESS"
+                        fi
+
 			exit
 			;;
 			2)
