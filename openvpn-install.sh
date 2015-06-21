@@ -240,6 +240,18 @@ else
 	echo "This can allow VPN clients to communicate between them"
 	read -p "Allow internal networking [y/n]: " -e -i n INTERNALNETWORK
 	echo ""
+	echo "Do you want to enable multiple connection for single client cert?"
+	echo "Improved security : Each client should have its own certificate/key pairs."
+	read -p "Allow multiple connection for single client cert [y/n]: " -e -i n DUPLICATE_CN
+	echo ""
+	echo "Do you want to redirect all the client's traffic via the VPN Network?"
+	echo "This can be useful to encryt all outgoing client's traffic"
+	echo "If you don't know say YES. ADVANCED users have to add route manually"
+	read -p "Enable redirect-gateway [y/n]: " -e -i y NETGW
+	echo ""
+	echo "Do you want to reset iptables?"
+	read -p "Reset iptables [y/n]: " -e -i y RESET_IPTABLES
+	echo ""
 	echo "What DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
 	echo "   2) Norton ConnectSafe"
@@ -333,10 +345,13 @@ else
 	cd /etc/openvpn/
 	# Set the server configuration
 	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
-	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
-	#Improved security : Each client should have its own certificate/key pairs.
-	#sed -i "s|;duplicate-cn|duplicate-cn|" server.conf
+	if [[ "$NETGW" = 'y' ]]; then
+		sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
+	fi
+	if [[ "$DUPLICATE_CN" = 'y' ]]; then
+		sed -i "s|;duplicate-cn|duplicate-cn|" server.conf
+	fi	
 	sed -i "s|server 10.8.0.0 255.255.255.0|server 172.16.69.0 255.255.255.128|" server.conf
 	sed -i "s|;push \"route 192.168.10.0 255.255.255.0\"|push \"route 192.168.0.0 255.255.0.0 net_gateway\"|" server.conf
 	sed -i "s|;cipher AES-128-CBC   # AES|cipher AES-256-CBC   # AES|" server.conf
@@ -400,15 +415,17 @@ else
 	# Avoid an unneeded reboot
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	# Set iptables
-	iptables -F
-	iptables -X
-	iptables -t nat -F
-	iptables -t nat -X
-	iptables -t mangle -F
-	iptables -t mangle -X
-	iptables -P INPUT ACCEPT
-	iptables -P FORWARD ACCEPT
-	iptables -P OUTPUT ACCEPT
+	if [[ "$RESET_IPTABLES" = 'y' ]]; then
+		iptables -F
+		iptables -X
+		iptables -t nat -F
+		iptables -t nat -X
+		iptables -t mangle -F
+		iptables -t mangle -X
+		iptables -P INPUT ACCEPT
+		iptables -P FORWARD DROP
+		iptables -P OUTPUT ACCEPT
+	fi
 	if [[ "$INTERNALNETWORK" = 'y' ]]; then
 		iptables -t nat -A POSTROUTING -s 172.16.69.0/25 ! -d 172.16.69.0/25 -j SNAT --to "$IP"
 		sed -i "1 a\iptables -t nat -A POSTROUTING -s 172.16.69.0/25 ! -d 172.16.69.0/25 -j SNAT --to $IP" $RCLOCAL
